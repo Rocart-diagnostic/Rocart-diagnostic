@@ -26,6 +26,8 @@ const COLORS = {
   amberLight: "#fef3c7",
   red: "#dc2626",
   redLight: "#fee2e2",
+  black: "#0a0a0a",
+  blackLight: "#d6d6d6",
 };
 
 // ============ ASSETS ROCART ============
@@ -97,43 +99,71 @@ const CRITICITES = [
   {
     id: "n1",
     niveau: 1,
-    label: "Acceptable",
+    label: "Surveillance périodique",
     color: COLORS.green,
     bgLight: COLORS.greenLight,
-    desc: "Surveillance simple",
+    desc: "État acceptable",
     criteres: "Défaut superficiel, sans évolution prévisible à court terme",
     intervention: "Surveillance lors des visites périodiques",
   },
   {
     id: "n2",
     niveau: 2,
-    label: "Action planifiée",
+    label: "Maintenance préventive 6-12 mois",
     color: COLORS.amber,
     bgLight: COLORS.amberLight,
-    desc: "Reprise locale 6-12 mois",
+    desc: "Reprise à planifier",
     criteres: "Défaut installé, évolution probable, pas de risque immédiat",
     intervention: "Reprise locale ou de zone, planifier hors exploitation",
   },
   {
     id: "n3",
     niveau: 3,
-    label: "Action immédiate",
+    label: "Intervention urgente",
     color: COLORS.red,
     bgLight: COLORS.redLight,
-    desc: "Intervention urgente",
+    desc: "Risque sécurité",
     criteres: "Risque pour le public, sécurité ou intégrité menacée",
     intervention: "Mise en sécurité immédiate, reprise prioritaire",
   },
+  {
+    id: "n4",
+    niveau: 4,
+    label: "Danger imminent — arrêt immédiat",
+    color: COLORS.black,
+    bgLight: COLORS.blackLight,
+    desc: "Arrêt d'exploitation",
+    criteres: "Effondrement possible, chute d'éléments, péril public avéré",
+    intervention: "Arrêt immédiat de la zone, consignation, expertise structurelle",
+  },
+];
+
+// ============ ACCÈS À L'OUVRAGE ============
+const ACCES_OUVRAGE = [
+  { id: "pied", label: "À pied d'œuvre" },
+  { id: "cordiste", label: "Cordiste" },
+  { id: "nacelle", label: "Nacelle" },
+  { id: "drone", label: "Drone" },
+  { id: "autre", label: "Autre" },
 ];
 
 // ============ MODES D'INSPECTION ============
 const MODES_INSPECTION = [
-  { id: "visuel", label: "Inspection visuelle", icon: "👁" },
-  { id: "tactile", label: "Sondage tactile", icon: "✋" },
-  { id: "tapotement", label: "Tapotement / sondage acoustique", icon: "🔨" },
-  { id: "cordiste", label: "Accès cordiste", icon: "🧗" },
-  { id: "nuit", label: "Inspection nocturne", icon: "🌙" },
-  { id: "outillage", label: "Outillage spécialisé", icon: "🔧" },
+  { id: "visuel", label: "Visuelle" },
+  { id: "tactile", label: "Tactile" },
+  { id: "acoustique", label: "Acoustique" },
+  { id: "endoscopie", label: "Endoscopie" },
+  { id: "thermographie", label: "Thermographie" },
+  { id: "prelevement", label: "Prélèvement" },
+  { id: "mesure", label: "Mesure" },
+  { id: "autre", label: "Autre" },
+];
+
+// ============ NIVEAUX D'AUTORISATION ============
+const AUTORISATIONS = [
+  { id: "interne", label: "Interne" },
+  { id: "securite", label: "Sécurité" },
+  { id: "externe", label: "Externe" },
 ];
 
 // ============ CONDITIONS MÉTÉO ============
@@ -489,6 +519,7 @@ function BottomNav({ view, setView }) {
 function Dashboard({ diagnostics, sites, onNewDiag, onSelectDiag, setView }) {
   const stats = {
     total: diagnostics.length,
+    n4: diagnostics.filter(d => d.criticite === "n4").length,
     n3: diagnostics.filter(d => d.criticite === "n3").length,
     n2: diagnostics.filter(d => d.criticite === "n2").length,
     n1: diagnostics.filter(d => d.criticite === "n1").length,
@@ -551,8 +582,10 @@ function Dashboard({ diagnostics, sites, onNewDiag, onSelectDiag, setView }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
         <StatCard label="Diagnostics" value={stats.total} color={COLORS.navy} />
         <StatCard label="Sites suivis" value={stats.sites} color={COLORS.navy} />
-        <StatCard label="Action immédiate" value={stats.n3} color={COLORS.red} />
-        <StatCard label="Action planifiée" value={stats.n2} color={COLORS.amber} />
+        <StatCard label="N4 danger" value={stats.n4} color={COLORS.black} />
+        <StatCard label="N3 urgent" value={stats.n3} color={COLORS.red} />
+        <StatCard label="N2 préventif" value={stats.n2} color={COLORS.amber} />
+        <StatCard label="N1 surveillance" value={stats.n1} color={COLORS.green} />
       </div>
 
       <div style={{ marginBottom: "16px" }}>
@@ -672,8 +705,9 @@ function DiagnosticsList({ diagnostics, sites, onSelectDiag, onNewDiag }) {
       <div style={{ display: "flex", gap: "6px", marginBottom: "16px", overflowX: "auto" }}>
         {[
           { id: "all", label: "Toutes", color: COLORS.navy },
-          { id: "n3", label: "N3 immédiat", color: COLORS.red },
-          { id: "n2", label: "N2 planifié", color: COLORS.amber },
+          { id: "n4", label: "N4 danger", color: COLORS.black },
+          { id: "n3", label: "N3 urgent", color: COLORS.red },
+          { id: "n2", label: "N2 préventif", color: COLORS.amber },
           { id: "n1", label: "N1 surveillance", color: COLORS.green },
         ].map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)}
@@ -718,6 +752,7 @@ function DiagnosticDetail({ diag, site, onDelete }) {
   const patho = PATHOLOGIES.find(p => p.id === diag.pathologieId);
   const couches = (diag.couchesIds || []).map(id => COUCHES.find(c => c.id === id)).filter(Boolean);
   const mode = MODES_INSPECTION.find(m => m.id === diag.modeInspection);
+  const acces = ACCES_OUVRAGE.find(a => a.id === diag.accesOuvrage);
   const meteo = METEO.find(m => m.id === diag.meteo);
   const dateStr = new Date(diag.createdAt).toLocaleString("fr-FR");
   const photos = diag.photos || (diag.photo ? [{ type: "ensemble", data: diag.photo }] : []);
@@ -765,9 +800,21 @@ function DiagnosticDetail({ diag, site, onDelete }) {
       "",
       "CONDITIONS",
       "----------",
+      `Accès:        ${acces?.label || "—"}`,
       `Mode:         ${mode?.label || "—"}`,
       `Météo:        ${meteo?.label || "—"}`,
       `Inspecteur:   ${diag.inspecteur || "—"}`,
+      "",
+      "FICHE CLIENT",
+      "------------",
+      `Client:       ${diag.clientNom || site?.client || "—"}`,
+      diag.clientTel ? `Téléphone:    ${diag.clientTel}` : "",
+      diag.clientEmail ? `Email:        ${diag.clientEmail}` : "",
+      diag.attraction ? `Attraction:   ${diag.attraction}` : "",
+      diag.siteLoc ? `Localisation: ${diag.siteLoc}` : "",
+      `Consignation: ${diag.consignation === "oui" ? "Oui — " + (diag.consignationType || "type non précisé") : "Non"}`,
+      `Autorisation: ${(AUTORISATIONS.find(a => a.id === diag.autorisation) || {}).label || "—"}`,
+      diag.piecesJointes?.length ? `Pièces jointes: ${diag.piecesJointes.length} document(s)` : "",
       "",
       "OBSERVATIONS",
       "------------",
@@ -918,11 +965,34 @@ function DiagnosticDetail({ diag, site, onDelete }) {
 
       {/* Conditions */}
       <DetailBlock title="Conditions d'inspection" icon={<Eye size={16} />}>
-        <DetailRow label="Mode" value={mode?.label || "—"} />
+        <DetailRow label="Accès à l'ouvrage" value={acces?.label || "—"} />
+        <DetailRow label="Mode d'inspection" value={mode?.label || "—"} />
         <DetailRow label="Météo" value={meteo?.label || "—"} />
         <DetailRow label="Inspecteur" value={diag.inspecteur || "—"} />
         <DetailRow label="Date" value={dateStr} />
       </DetailBlock>
+
+      {/* Fiche client (si saisie en étape 1) */}
+      {(diag.clientNom || diag.clientTel || diag.clientEmail) && (
+        <DetailBlock title="Fiche client" icon={<User size={16} />}>
+          <DetailRow label="Client" value={diag.clientNom || "—"} />
+          <DetailRow label="Téléphone" value={diag.clientTel || "—"} />
+          <DetailRow label="Email" value={diag.clientEmail || "—"} />
+          {diag.attraction && <DetailRow label="Attraction / zone" value={diag.attraction} />}
+          {diag.siteLoc && <DetailRow label="Localisation" value={diag.siteLoc} />}
+          <DetailRow label="Consignation" value={
+            diag.consignation === "oui"
+              ? `Oui — ${diag.consignationType || "type non précisé"}`
+              : "Non"
+          } />
+          <DetailRow label="Niveau d'autorisation" value={
+            (AUTORISATIONS.find(a => a.id === diag.autorisation) || {}).label || "—"
+          } />
+          {diag.piecesJointes?.length > 0 && (
+            <DetailRow label="Pièces jointes" value={`${diag.piecesJointes.length} document(s)`} />
+          )}
+        </DetailBlock>
+      )}
 
       {/* Site */}
       <DetailBlock title="Contexte" icon={<Building2 size={16} />}>
@@ -999,18 +1069,33 @@ function DetailRow({ label, value }) {
 // ============ NEW DIAGNOSTIC MODAL ============
 function NewDiagnosticModal({ sites, defaultSiteId, onClose, onSave }) {
   const [step, setStep] = useState(1);
+  // Step 1 — Création de site
+  const [clientNom, setClientNom] = useState("");
+  const [clientTel, setClientTel] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [attraction, setAttraction] = useState("");
+  const [siteLoc, setSiteLoc] = useState("");
+  const [consignation, setConsignation] = useState("non");
+  const [consignationType, setConsignationType] = useState("");
+  const [autorisation, setAutorisation] = useState("interne");
+  const [piecesJointes, setPiecesJointes] = useState([]);
+  // Step 2 — Photos & site
   const [photos, setPhotos] = useState([]);
   const [siteId, setSiteId] = useState(defaultSiteId || sites[0]?.id || "");
+  // Step 3 — Pathologie
   const [pathologieId, setPathologieId] = useState("");
   const [pathologieAutre, setPathologieAutre] = useState("");
   const [couchesIds, setCouchesIds] = useState([]);
+  // Step 4 — Criticité, accès, inspection
   const [criticite, setCriticite] = useState("");
   const [zone, setZone] = useState("");
   const [hauteur, setHauteur] = useState("");
   const [largeurFissure, setLargeurFissure] = useState("");
   const [longueurDefaut, setLongueurDefaut] = useState("");
   const [surfaceAffectee, setSurfaceAffectee] = useState("");
+  const [accesOuvrage, setAccesOuvrage] = useState("pied");
   const [modeInspection, setModeInspection] = useState("visuel");
+  // Step 5 — Localisation & contexte
   const [meteo, setMeteo] = useState("sec");
   const [inspecteur, setInspecteur] = useState("");
   const [notes, setNotes] = useState("");
@@ -1061,14 +1146,23 @@ function NewDiagnosticModal({ sites, defaultSiteId, onClose, onSave }) {
     const id = "d" + Date.now();
     const diag = {
       id, siteId, photos,
+      // Création de site
+      clientNom, clientTel, clientEmail,
+      attraction, siteLoc,
+      consignation, consignationType: consignation === "oui" ? consignationType : "",
+      autorisation, piecesJointes,
+      // Pathologie
       pathologieId, pathologieAutre,
       couchesIds,
+      // Criticité
       criticite,
       zone, hauteur: hauteur ? parseFloat(hauteur) : null,
       largeurFissure: largeurFissure ? parseFloat(largeurFissure) : null,
       longueurDefaut: longueurDefaut ? parseFloat(longueurDefaut) : null,
       surfaceAffectee: surfaceAffectee ? parseFloat(surfaceAffectee) : null,
-      modeInspection, meteo, inspecteur,
+      accesOuvrage, modeInspection,
+      // Contexte
+      meteo, inspecteur,
       notes, gps, orientation,
       createdAt: Date.now()
     };
@@ -1076,9 +1170,13 @@ function NewDiagnosticModal({ sites, defaultSiteId, onClose, onSave }) {
   };
 
   const canNext = () => {
-    if (step === 1) return photos.length > 0;
-    if (step === 2) return !!pathologieId && couchesIds.length > 0;
-    if (step === 3) return !!criticite;
+    if (step === 1) {
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail);
+      return clientNom.trim() && clientTel.trim() && emailOk;
+    }
+    if (step === 2) return photos.length > 0;
+    if (step === 3) return !!pathologieId && couchesIds.length > 0;
+    if (step === 4) return !!criticite;
     return true;
   };
 
@@ -1100,12 +1198,13 @@ function NewDiagnosticModal({ sites, defaultSiteId, onClose, onSave }) {
         }}>
           <div>
             <div style={{ fontSize: "10px", color: COLORS.gold, letterSpacing: "1.5px", fontWeight: 600 }}>
-              ÉTAPE {step} / 4
+              ÉTAPE {step} / 5
             </div>
             <div style={{ fontSize: "15px", fontWeight: 500, color: COLORS.navy }}>
-              {step === 1 ? "Photos & site"
-                : step === 2 ? "Pathologie & couches"
-                : step === 3 ? "Criticité & mesures"
+              {step === 1 ? "Création de site"
+                : step === 2 ? "Photos & site"
+                : step === 3 ? "Pathologie & couches"
+                : step === 4 ? "Criticité, accès & inspection"
                 : "Localisation & contexte"}
             </div>
           </div>
@@ -1121,7 +1220,7 @@ function NewDiagnosticModal({ sites, defaultSiteId, onClose, onSave }) {
           padding: "8px 18px", background: "white", borderBottom: `1px solid ${COLORS.border}`,
           display: "flex", gap: "4px"
         }}>
-          {[1, 2, 3, 4].map(s => (
+          {[1, 2, 3, 4, 5].map(s => (
             <div key={s} style={{
               flex: 1, height: "3px", borderRadius: "2px",
               background: s <= step ? COLORS.gold : COLORS.border
@@ -1131,28 +1230,42 @@ function NewDiagnosticModal({ sites, defaultSiteId, onClose, onSave }) {
 
         <div style={{ padding: "16px", flex: 1 }}>
           {step === 1 && (
+            <StepSite
+              clientNom={clientNom} setClientNom={setClientNom}
+              clientTel={clientTel} setClientTel={setClientTel}
+              clientEmail={clientEmail} setClientEmail={setClientEmail}
+              attraction={attraction} setAttraction={setAttraction}
+              siteLoc={siteLoc} setSiteLoc={setSiteLoc}
+              consignation={consignation} setConsignation={setConsignation}
+              consignationType={consignationType} setConsignationType={setConsignationType}
+              autorisation={autorisation} setAutorisation={setAutorisation}
+              piecesJointes={piecesJointes} setPiecesJointes={setPiecesJointes}
+            />
+          )}
+          {step === 2 && (
             <Step1Photos
               photos={photos} setPhotos={setPhotos}
               siteId={siteId} setSiteId={setSiteId} sites={sites}
             />
           )}
-          {step === 2 && (
+          {step === 3 && (
             <Step2Patho
               pathologieId={pathologieId} setPathologieId={setPathologieId}
               pathologieAutre={pathologieAutre} setPathologieAutre={setPathologieAutre}
               couchesIds={couchesIds} setCouchesIds={setCouchesIds}
             />
           )}
-          {step === 3 && (
+          {step === 4 && (
             <Step3Critic
               criticite={criticite} setCriticite={setCriticite}
               largeurFissure={largeurFissure} setLargeurFissure={setLargeurFissure}
               longueurDefaut={longueurDefaut} setLongueurDefaut={setLongueurDefaut}
               surfaceAffectee={surfaceAffectee} setSurfaceAffectee={setSurfaceAffectee}
+              accesOuvrage={accesOuvrage} setAccesOuvrage={setAccesOuvrage}
               modeInspection={modeInspection} setModeInspection={setModeInspection}
             />
           )}
-          {step === 4 && (
+          {step === 5 && (
             <Step4Loc
               zone={zone} setZone={setZone}
               hauteur={hauteur} setHauteur={setHauteur}
@@ -1180,7 +1293,7 @@ function NewDiagnosticModal({ sites, defaultSiteId, onClose, onSave }) {
               Retour
             </button>
           )}
-          {step < 4 ? (
+          {step < 5 ? (
             <button onClick={() => canNext() && setStep(step + 1)} disabled={!canNext()}
               style={{
                 background: canNext() ? COLORS.navy : COLORS.border,
@@ -1204,6 +1317,187 @@ function NewDiagnosticModal({ sites, defaultSiteId, onClose, onSave }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============ STEP — CRÉATION DE SITE ============
+function StepSite({
+  clientNom, setClientNom,
+  clientTel, setClientTel,
+  clientEmail, setClientEmail,
+  attraction, setAttraction,
+  siteLoc, setSiteLoc,
+  consignation, setConsignation,
+  consignationType, setConsignationType,
+  autorisation, setAutorisation,
+  piecesJointes, setPiecesJointes
+}) {
+  const emailValid = clientEmail === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail);
+
+  const handleFileUpload = (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setPiecesJointes(prev => [...prev, {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: ev.target.result
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removeFile = (idx) => {
+    setPiecesJointes(piecesJointes.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div>
+      {/* Bandeau confidentialité */}
+      <div style={{
+        background: COLORS.navyDeep, color: "white",
+        padding: "10px 12px", borderRadius: "10px",
+        fontSize: "11px", lineHeight: 1.5, marginBottom: "16px",
+        borderLeft: `3px solid ${COLORS.gold}`
+      }}>
+        Les données et constats de ce diagnostic sont strictement confidentiels
+        et réservés exclusivement à Rocart et au client. Toute divulgation ou
+        reproduction sans autorisation est interdite.
+      </div>
+
+      <Label>NOM DU CLIENT *</Label>
+      <input type="text" value={clientNom}
+        onChange={(e) => setClientNom(e.target.value)}
+        placeholder="Société ou contact"
+        style={{ ...inputStyle, marginBottom: "14px" }} />
+
+      <Label>TÉLÉPHONE *</Label>
+      <input type="tel" value={clientTel}
+        onChange={(e) => setClientTel(e.target.value)}
+        placeholder="+33 ..."
+        style={{ ...inputStyle, marginBottom: "14px" }} />
+
+      <Label>EMAIL *</Label>
+      <input type="email" value={clientEmail}
+        onChange={(e) => setClientEmail(e.target.value)}
+        placeholder="contact@exemple.com"
+        style={{
+          ...inputStyle, marginBottom: "14px",
+          border: `1px solid ${emailValid ? COLORS.border : COLORS.red}`
+        }} />
+      {!emailValid && (
+        <div style={{ fontSize: "11px", color: COLORS.red, marginTop: "-10px", marginBottom: "10px" }}>
+          Format d'email invalide
+        </div>
+      )}
+
+      <Label>ATTRACTION / ZONE</Label>
+      <input type="text" value={attraction}
+        onChange={(e) => setAttraction(e.target.value)}
+        placeholder="Nom de l'attraction ou de la zone"
+        style={{ ...inputStyle, marginBottom: "14px" }} />
+
+      <Label>LOCALISATION</Label>
+      <input type="text" value={siteLoc}
+        onChange={(e) => setSiteLoc(e.target.value)}
+        placeholder="Ville, parc, repère"
+        style={{ ...inputStyle, marginBottom: "16px" }} />
+
+      <Label>CONSIGNATION REQUISE</Label>
+      <div style={{ display: "flex", gap: "6px", marginBottom: consignation === "oui" ? "10px" : "16px" }}>
+        {["non", "oui"].map(v => (
+          <button key={v} onClick={() => setConsignation(v)}
+            style={{
+              flex: 1, padding: "10px", borderRadius: "10px",
+              border: `1px solid ${consignation === v ? COLORS.navy : COLORS.border}`,
+              background: consignation === v ? COLORS.navy : "white",
+              color: consignation === v ? "white" : COLORS.text,
+              fontSize: "13px", cursor: "pointer",
+              fontWeight: consignation === v ? 500 : 400,
+              textTransform: "capitalize"
+            }}>
+            {v}
+          </button>
+        ))}
+      </div>
+      {consignation === "oui" && (
+        <input type="text" value={consignationType}
+          onChange={(e) => setConsignationType(e.target.value)}
+          placeholder="Type de consignation (électrique, hydraulique, mécanique...)"
+          style={{ ...inputStyle, marginBottom: "16px" }} />
+      )}
+
+      <Label>NIVEAU D'AUTORISATION</Label>
+      <div style={{ display: "flex", gap: "6px", marginBottom: "16px" }}>
+        {AUTORISATIONS.map(a => (
+          <button key={a.id} onClick={() => setAutorisation(a.id)}
+            style={{
+              flex: 1, padding: "10px", borderRadius: "10px",
+              border: `1px solid ${autorisation === a.id ? COLORS.navy : COLORS.border}`,
+              background: autorisation === a.id ? COLORS.navy : "white",
+              color: autorisation === a.id ? "white" : COLORS.text,
+              fontSize: "12px", cursor: "pointer",
+              fontWeight: autorisation === a.id ? 500 : 400
+            }}>
+            {a.label}
+          </button>
+        ))}
+      </div>
+
+      <Label>PIÈCES JOINTES</Label>
+      <div style={{ fontSize: "11px", color: COLORS.textMuted, marginBottom: "8px" }}>
+        Plan d'intervention, document d'autorisation, etc.
+      </div>
+      {piecesJointes.length > 0 && (
+        <div style={{ marginBottom: "10px" }}>
+          {piecesJointes.map((pj, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "8px 10px", background: "white",
+              border: `1px solid ${COLORS.border}`, borderRadius: "8px",
+              marginBottom: "6px"
+            }}>
+              <FileText size={14} color={COLORS.navy} />
+              <div style={{ flex: 1, fontSize: "12px", color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {pj.name}
+              </div>
+              <div style={{ fontSize: "10px", color: COLORS.textMuted }}>
+                {(pj.size / 1024).toFixed(0)} Ko
+              </div>
+              <button onClick={() => removeFile(i)}
+                style={{
+                  background: "transparent", border: "none",
+                  color: COLORS.red, cursor: "pointer", padding: "2px"
+                }}>
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <label htmlFor="rocart-pj-input"
+        style={{
+          display: "block", padding: "12px", textAlign: "center",
+          borderRadius: "10px", background: "white",
+          border: `1px dashed ${COLORS.navy}`, color: COLORS.navy,
+          cursor: "pointer", fontSize: "13px", fontWeight: 500
+        }}>
+        + Ajouter un document
+      </label>
+      <input id="rocart-pj-input" type="file" multiple
+        accept="image/*,application/pdf,.doc,.docx"
+        onChange={handleFileUpload}
+        style={{
+          position: "absolute", width: "1px", height: "1px",
+          padding: 0, margin: "-1px", overflow: "hidden",
+          clip: "rect(0,0,0,0)", border: 0
+        }} />
     </div>
   );
 }
@@ -1497,6 +1791,7 @@ function Step3Critic({
   largeurFissure, setLargeurFissure,
   longueurDefaut, setLongueurDefaut,
   surfaceAffectee, setSurfaceAffectee,
+  accesOuvrage, setAccesOuvrage,
   modeInspection, setModeInspection
 }) {
   return (
@@ -1554,7 +1849,24 @@ function Step3Critic({
           value={surfaceAffectee} onChange={setSurfaceAffectee} step="0.01" last />
       </div>
 
-      <Label>MODE D'INSPECTION</Label>
+      <Label>ACCÈS À L'OUVRAGE</Label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "20px" }}>
+        {ACCES_OUVRAGE.map(a => (
+          <button key={a.id} onClick={() => setAccesOuvrage(a.id)}
+            style={{
+              padding: "8px 11px", borderRadius: "16px",
+              border: `1px solid ${accesOuvrage === a.id ? COLORS.navy : COLORS.border}`,
+              background: accesOuvrage === a.id ? COLORS.navy : "white",
+              color: accesOuvrage === a.id ? "white" : COLORS.text,
+              fontSize: "11px", cursor: "pointer",
+              fontWeight: accesOuvrage === a.id ? 500 : 400
+            }}>
+            {a.label}
+          </button>
+        ))}
+      </div>
+
+      <Label>MODES D'INSPECTION</Label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
         {MODES_INSPECTION.map(m => (
           <button key={m.id} onClick={() => setModeInspection(m.id)}
