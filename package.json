@@ -1,0 +1,24 @@
+{
+  "name": "rocart-diagnostic",
+  "version": "0.4.0",
+  "description": "Application de diagnostic pour décors thématiques - ROCART",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "next export"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "next": "^14.0.0",
+    "lucide-react": "^0.383.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
